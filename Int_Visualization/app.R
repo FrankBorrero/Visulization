@@ -14,7 +14,8 @@ bd <- read.csv(file = "data/nba_2017_br.csv", header = TRUE, sep = ",")
 bd<- bd%>%
   mutate(FG. = FG.*100,
          X3P. = X3P.*100,
-         X2P. = X2P. *100)
+         X2P. = X2P. *100,
+         FT. = FT.*100)
 bd<-bd%>%
   filter(Tm != "TOT")
 
@@ -30,6 +31,15 @@ ui <- fluidPage (
       sliderInput("slider", p(h4("Games played per player in regular season"),
                             h5("Range of interest:")),
                             min(bd$G), max(bd$G), value = c(min(bd$G),max(bd$G))),
+      
+      sliderInput("slider2",p(h4("Average minutes played per game in regular season"),
+                           h5("Range of interest:")),
+                           min(bd$MP), max(bd$MP), value = c(min(bd$MP),max(bd$MP))),
+      
+      sliderInput("slider3",p(h4("Player age"),
+                            h5("Range of interest:")),
+                            min(bd$Age), max(bd$Age), value = c(min(bd$Age),max(bd$Age))),
+        
     ),
     
     mainPanel(
@@ -41,8 +51,12 @@ ui <- fluidPage (
                            plotOutput("plot2")),
                   tabPanel("3 Point Field Goals Percentage",
                            plotOutput("plot3")),
-                  tabPanel("Average points per game",
-                           plotOutput("plot4"))
+                  tabPanel("Free Throw Percentage",
+                           plotOutput("plot4")),
+                  tabPanel("Average Field Goals per Game",
+                           plotOutput("plot5")),
+                  tabPanel("Average Points per Game",
+                           plotOutput("plot6"))
       )
   )
   )
@@ -53,10 +67,11 @@ ui <- fluidPage (
 server <- function(input, output) {
   
   dataInput <- reactive({
-    dataset <- subset(bd, G >= input$slider[1] & G <= input$slider[2] & Tm==input$select)
+    dataset <- subset(bd, G >= input$slider[1] & G <= input$slider[2] 
+                      & Tm==input$select 
+                      & MP >= input$slider2[1] & MP <= input$slider2[2]
+                      & Age >= input$slider3[1] & Age <= input$slider3[2])
     dataset
-    #dataset <- dataset[bd$Tm==input$select,]
-    #bd[bd$Tm==input$select,] 
   })
   
   output$plot1 <- renderPlot({
@@ -115,6 +130,42 @@ server <- function(input, output) {
   })
   
   output$plot4 <- renderPlot({
+    
+    data <- dataInput()
+    
+    ggplot(data, aes(x=Player, y=FT.)) +
+      geom_segment(aes(x=Player, xend=Player, y=0, yend=FT.), color="black")+
+      geom_point( color="gray", size=4, alpha=1)+
+      theme_light() +
+      coord_flip()+
+      xlab("Player")+
+      ylab("Free Throw Percentage")+
+      ggtitle("Free Throw Accuracy Percentage")+
+      theme(
+        panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank())
+  })
+  
+  output$plot5 <- renderPlot({
+    
+    data <- dataInput()
+    
+    ggplot(data, aes(x=Player, y=FG)) +
+      geom_segment(aes(x=Player, xend=Player, y=0, yend=FG), color="black")+
+      geom_point( color="gray", size=4, alpha=1)+
+      theme_light() +
+      coord_flip()+
+      xlab("Player")+
+      ylab("Average Field Goals per Game")+
+      ggtitle("Average Field Goals per Game")+
+      theme(
+        panel.grid.major.y = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks.y = element_blank())
+  })
+  
+  output$plot6 <- renderPlot({
     
     data <- dataInput()
     
